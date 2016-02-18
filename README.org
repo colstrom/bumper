@@ -1,0 +1,59 @@
+#+TITLE: bumper
+#+SUBTITLE: Semantic Versioning Tool
+
+* Overview
+
+~bumper~ is a tool for enforcing Semantic Versioning.
+
+** Requirements
+
+- Written in pure POSIX shellscript, ~bumper~ should work on any Unix-like system.
+- ~git~
+
+** Assumptions
+
+- A ~VERSION~ file exists at the root of your repository.
+- You use some manner of branch-oriented workflow, with ~develop~ as your trunk.
+
+** Usage
+
+Using ~bumper~ is simple!
+
+#+BEGIN_SRC shell
+  bumper
+#+END_SRC
+
+#+BEGIN_EXAMPLE
+  feature/documentation contains no modifications to VERSION
+
+  Given a version number MAJOR.MINOR.PATCH, increment the:
+    - MAJOR version when you make incompatible API changes,
+    - MINOR version when you add functionality in a backwards-compatible manner, and
+    - PATCH version when you make backwards-compatible bug fixes.
+
+  Current Version is 0.0.0
+
+  Which number should we bump today?
+  MAJOR MINOR PATCH: 
+#+END_EXAMPLE
+
+If available, ~bumper~ will present a nicer UI with ~yank~ or ~dialog~, but
+these are optional.
+
+* Workflow
+
+~bumper~ is intended for use in a ~pre-push~ hook, with a tool like
+~overcommit~. The intended workflow is:
+
+1. Work on your branch.
+2. Bump ~VERSION~ appropriate before pushing to ~develop~.
+3. Automated tests are run by CI platform of choice.
+4. If all goes well, the CI system merges develop into ~master~, and tags the
+   merge commit according to the ~VERSION~ file.
+
+* License
+
+~bumper~ is available under the [[https://tldrlegal.com/license/mit-license][MIT License]]. See ~LICENSE.txt~ for the full text.
+
+* Contributors
+- [[https://colstrom.github.io/][Chris Olstrom]] | [[mailto:chris@olstrom.com][e-mail]] | [[https://twitter.com/ChrisOlstrom][Twitter]]
