@@ -1,0 +1,8 @@
+---
+script:
+  - checkbashisms --newline --posix --extra bin/bumper
+ignore:
+  - .git/**
+  - .lock
+  - .#*
+verbose: true
