@@ -1,0 +1,166 @@
+#!/bin/sh
+
+if test -n ${XTRACE:-''}; then
+    set -o xtrace
+fi
+
+set -o nounset
+
+set -o errexit
+REPOSITORY_ROOT=$(git rev-parse --show-toplevel)
+VERSION_FILE=${VERSION_FILE:-'VERSION'}
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+set +o errexit
+
+modified_files() {
+    git diff --name-only develop
+}
+
+file_was_modified() {
+    modified_files | grep -q ${1}
+}
+
+available_in_path() {
+    which -s ${1}
+}
+
+upcase() {
+    tr [:lower:] [:upper:]
+}
+
+downcase() {
+    tr [:upper:] [:lower:]
+}
+
+file_exists() {
+    test -f ${1}
+}
+
+read_version_file() {
+    if file_exists ${REPOSITORY_ROOT}/${VERSION_FILE}; then
+        cat ${REPOSITORY_ROOT}/${VERSION_FILE}
+    fi
+}
+
+version_index() {
+    case $(echo ${1} | upcase) in
+        MAJOR) echo 1;;
+        MINOR) echo 2;;
+        PATCH) echo 3;;
+        *) echo 0;;
+    esac
+}
+
+current_version() {
+    if test ${#} -gt 0; then
+       current_version | awk -F . "{ print \$$(version_index ${1}) }"
+    else
+        CURRENT_VERSION=$(read_version_file)
+        if test -n "${CURRENT_VERSION}"; then
+            echo ${CURRENT_VERSION}
+        else
+            echo '0.0.0'
+        fi
+    fi
+}
+
+next_version() {
+    echo $(current_version ${1}) + 1 | bc
+}
+
+new_version() {
+    TARGET=$(echo ${1} | upcase)
+    for COMPONENT in MAJOR MINOR PATCH; do
+        if test ${COMPONENT} = ${TARGET}; then
+            next_version ${COMPONENT}
+        else
+            current_version ${COMPONENT}
+        fi
+    done | xargs echo | tr ' ' .
+}
+
+warn_branch_does_not_modify_version() {
+    echo ${BRANCH} contains no modifications to ${VERSION_FILE}
+}
+
+explain_semantic_versioning() {
+    cat <<EOF
+$(warn_branch_does_not_modify_version)
+
+Given a version number MAJOR.MINOR.PATCH, increment the:
+  - MAJOR version when you make incompatible API changes,
+  - MINOR version when you add functionality in a backwards-compatible manner, and
+  - PATCH version when you make backwards-compatible bug fixes.
+
+Current Version is $(current_version)
+
+Which number should we bump today?
+EOF
+}
+
+available_user_interfaces() {
+    for COMMAND in yank dialog; do
+        if available_in_path ${COMMAND}; then
+            echo ${COMMAND}
+        fi
+    done
+    echo read
+}
+
+preferred_user_interface() {
+    if test -n ${BUMP_UI:-''}; then
+        echo ${BUMP_UI}
+    else
+        available_user_interfaces | head -n 1
+    fi
+}
+
+bump() {
+    set -o errexit
+    OLD_VERSION=$(current_version)
+    NEW_VERSION=$(new_version ${1})
+    echo ${NEW_VERSION} | tee ${REPOSITORY_ROOT}/${VERSION_FILE}
+    set +o errexit
+
+    if test $(current_version) != ${NEW_VERSION}; then
+        echo Something went terribly wrong... expected version to be [ ${NEW_VERSION} ] but found [ $(current_version) ]
+    else
+        git add ${REPOSITORY_ROOT}/${VERSION_FILE}
+        git commit -m "Bump version from ${OLD_VERSION} to ${NEW_VERSION}" ${REPOSITORY_ROOT}/${VERSION_FILE}
+    fi
+}
+
+interactive_bump() {
+    BUMP=$(mktemp)
+    case $(preferred_user_interface) in
+        yank)
+            explain_semantic_versioning
+            echo "MAJOR MINOR PATCH" | yank | cat > ${BUMP}
+            break;;
+        dialog)
+            dialog \
+                --title "$(warn_branch_does_not_modify_version)" \
+                --radiolist "Given a version number MAJOR.MINOR.PATCH, increment the:" 10 80 3 \
+                MAJOR "when you make incompatible API changes" off \
+                MINOR "when you add functionality in a backwards-compatible manner" off \
+                PATCH "when you make backwards-compatible bug fixes." on \
+                2> ${BUMP}
+            break;;
+        *)
+            explain_semantic_versioning
+            printf 'MAJOR MINOR PATCH: '
+            read REPLY
+            echo ${REPLY} > ${BUMP}
+            break;;
+    esac
+    bump $(cat ${BUMP})
+    rm -f ${BUMP}
+}
+
+if file_was_modified ${VERSION_FILE}; then
+    exit 0
+else
+    interactive_bump
+fi
+
+file_was_modified ${VERSION_FILE}
