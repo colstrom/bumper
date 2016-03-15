@@ -21,7 +21,7 @@ file_was_modified() {
 }
 
 available_in_path() {
-    which -s ${1}
+    which ${1} > /dev/null
 }
 
 upcase() {
