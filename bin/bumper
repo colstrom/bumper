@@ -177,7 +177,11 @@ interactive_bump() {
 if file_was_modified ${VERSION_FILE}; then
     exit 0
 else
-    interactive_bump
+    if interactive; then
+        interactive_bump
+    else
+        exit 26
+    fi
 fi
 
 file_was_modified ${VERSION_FILE}
