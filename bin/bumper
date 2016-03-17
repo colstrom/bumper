@@ -82,11 +82,17 @@ next_version() {
 
 new_version() {
     TARGET=$(echo ${1} | upcase)
+    RESET=false
     for COMPONENT in MAJOR MINOR PATCH; do
         if test ${COMPONENT} = ${TARGET}; then
             next_version ${COMPONENT}
+            RESET=true
         else
-            current_version ${COMPONENT}
+            if test ${RESET} = true; then
+                echo 0
+            else
+                current_version ${COMPONENT}
+            fi
         fi
     done | xargs echo | tr ' ' .
 }
