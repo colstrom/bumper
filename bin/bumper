@@ -40,6 +40,10 @@ stdout_is_a_tty() {
     test -t 1
 }
 
+interactive() {
+    stdin_is_a_tty && stdout_is_a_tty
+}
+
 file_exists() {
     test -f ${1}
 }
