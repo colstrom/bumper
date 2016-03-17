@@ -153,8 +153,13 @@ interactive_bump() {
             echo ${REPLY} > ${BUMP}
             break;;
     esac
-    bump $(cat ${BUMP})
-    rm -f ${BUMP}
+    if grep -qE '(MAJOR|MINOR|PATCH)' ${BUMP}; then
+        bump $(cat ${BUMP})
+        rm -f ${BUMP}
+    else
+        rm -f ${BUMP}
+        exit 23
+    fi
 }
 
 if file_was_modified ${VERSION_FILE}; then
