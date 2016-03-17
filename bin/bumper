@@ -32,6 +32,10 @@ downcase() {
     tr [:upper:] [:lower:]
 }
 
+stdin_is_a_tty() {
+    test -t 0
+}
+
 file_exists() {
     test -f ${1}
 }
