@@ -36,6 +36,10 @@ stdin_is_a_tty() {
     test -t 0
 }
 
+stdout_is_a_tty() {
+    test -t 1
+}
+
 file_exists() {
     test -f ${1}
 }
