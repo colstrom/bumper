@@ -1,0 +1,6 @@
+#!/bin/sh
+
+TRUNK=${TRUNK:-'develop'}
+LATEST_TAG=$(git describe --tags --abbrev=0)
+
+git rev-list --tags ${TRUNK} --not ${LATEST_TAG} | while read object; do git notes --ref=versioning show $object 2> /dev/null; done | grep -E '^(MAJOR|MINOR|PATCH)$'
